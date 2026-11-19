@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -34,10 +35,24 @@ def main() -> None:
         evaluate.append("--seeds")
         evaluate.extend(str(seed) for seed in args.evaluation_seeds)
 
+    config = json.loads((ROOT / "config" / "experiment.json").read_text(encoding="utf-8-sig"))
+
     steps = (
         ("Train both state modes", train),
         ("Evaluate DQNs and baselines", evaluate),
-        ("Summarize evaluation CSV", [sys.executable, "-u", "-m", "analysis.summarize_evaluation"]),
+        (
+            "Summarize evaluation CSV",
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "analysis.summarize_evaluation",
+                "--input",
+                str(ROOT / config["evaluation_csv"]),
+                "--output",
+                str(ROOT / config["evaluation_summary_csv"]),
+            ],
+        ),
     )
     for label, command in steps:
         print(f"\n=== {label} ===", flush=True)

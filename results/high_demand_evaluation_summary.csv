@@ -1,0 +1,5 @@
+agent,state_mode,n_episodes,episode_return_n,episode_return_mean,episode_return_sd,mean_wait_s_n,mean_wait_s_mean,mean_wait_s_sd,mean_queue_vehicles_n,mean_queue_vehicles_mean,mean_queue_vehicles_sd,throughput_vehicles_n,throughput_vehicles_mean,throughput_vehicles_sd,simulated_seconds_n,simulated_seconds_mean,simulated_seconds_sd,wall_time_seconds_n,wall_time_seconds_mean,wall_time_seconds_sd
+DQN,rich,10,10,-238.120000,5.866818,10,13.550739,0.665552,10,11.906000,0.293341,10,219.100000,2.685351,10,300.000000,0.000000,10,0.744400,0.018222
+DQN,simple,10,10,-245.046666,7.706470,10,15.387991,0.561254,10,12.252333,0.385323,10,210.200000,2.699794,10,300.000000,0.000000,10,0.785000,0.031924
+fixed_time_1decision,simple,10,10,-245.046666,7.706470,10,15.387991,0.561254,10,12.252333,0.385323,10,210.200000,2.699794,10,300.000000,0.000000,10,0.732900,0.022854
+random,simple,10,10,-300.006667,21.682159,10,17.636383,2.865339,10,15.000333,1.084108,10,213.900000,13.900040,10,300.000000,0.000000,10,0.754100,0.015037

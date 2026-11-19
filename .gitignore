@@ -5,6 +5,9 @@ results/*.csv
 !results/train_episodes.csv
 !results/evaluation.csv
 !results/evaluation_summary.csv
+!results/high_demand_train_episodes.csv
+!results/high_demand_evaluation.csv
+!results/high_demand_evaluation_summary.csv
 results/*.xml
 results/*.json
 results/**/*.xml

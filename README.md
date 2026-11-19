@@ -48,7 +48,7 @@ SUMO traffic simulation remains CPU-based; CUDA accelerates only the small DQN n
 python -m experiments.benchmark_devices
 ~~~
 
-## Train and evaluate the engineering pilot
+## Train and evaluate the synthetic high-demand pilot
 
 Run the model checks and SUMO integration smoke run:
 
@@ -57,7 +57,7 @@ python -m unittest discover -s tests -v
 python -m experiments.traci_smoke
 ~~~
 
-Train both state representations on paired seeds 42 through 61, then evaluate them with fixed-time and seeded-random controllers on shared seeds 100, 101, and 102:
+The current profile uses four straight-through flows at 900 vehicles/hour per approach, a 300-second episode, and a 15-second decision interval. These are synthetic generated flows, not calibrated local traffic counts. Both state representations train for 160 episodes on paired SUMO seeds 42–201; evaluation uses 10 distinct shared seeds (300–309) and includes fixed-time and seeded-random controllers:
 
 ~~~powershell
 python -m experiments.train
@@ -74,16 +74,31 @@ python -m experiments.run_pilot --device cpu
 
 The runner stops if a step fails. Optional flags include --episodes, --seed-start, and --evaluation-seeds.
 
-Matplotlib figures are saved as PNG and PDF under results/figures/. Rerun analysis.plot_results after you update the CSV results.
+Matplotlib figures for the current profile are saved as PNG and PDF under results/figures_high_demand/. Rerun analysis.plot_results after you update the CSV results.
 
-The default is 20 episodes per state mode, with 300 simulated seconds per episode. For a fast wiring check, run python -m experiments.train --episodes 1. This is an engineering pilot, not enough evidence for convergence or for claiming one observation is better. The training and evaluation CSVs and their summary are tracked as pilot records; temporary wiring-check CSVs, TripInfo XML files, and model checkpoints remain under results/ and are ignored by Git.
+The run writes results/high_demand_train_episodes.csv, results/high_demand_evaluation.csv, and results/high_demand_evaluation_summary.csv. Figures go to results/figures_high_demand/ in PNG and PDF formats. Earlier balanced-demand pilot files remain in results/ and results/figures/ for comparison. The `.py` files contain Python source, `plt` is the usual in-code alias for `matplotlib.pyplot`, and `.pt` files are PyTorch model checkpoints; none of those is a Matplotlib figure format.
+
+For a fast calibration run that does not replace the 160-episode results, use `python -m experiments.train --episodes 1 --output results/calibration_train.csv`. This writes a temporary CSV and the current checkpoints; run a full training/evaluation only after confirming the scenario. One training run per state mode is still limited evidence and cannot establish convergence or that one observation is better. Temporary calibration CSVs, TripInfo XML files, and model checkpoints are ignored by Git.
 
 Mean queue is averaged over one-second SUMO steps. Throughput counts vehicles that arrived before episode end. Mean waiting time averages SUMO TripInfo waitingTime for completed trips only; unfinished trips are excluded.
 To keep the extra rich-state features on comparable numeric scales, the DQN divides each observation feature by the fixed divisor listed under state_scales in config/experiment.json. The shared queue and green-axis features use the same divisors for both agents.
 
-## Observed local pilot
+## Current high-demand run
 
-Run on 2026-11-19 with 20 training episodes per state mode and three shared evaluation seeds. On each evaluation seed, both trained DQNs matched the fixed-time baseline's episode return, queue, completed-trip waiting time, throughput, and simulated duration. Across the three seeds the mean queue was 1.332 vehicles, completed-trip mean waiting time was 3.729 seconds, and throughput was 93.667 vehicles per 300-second episode. The seeded-random controller averaged 4.260 vehicles in queue, 12.267 seconds completed-trip waiting time, and 89.333 arrivals. The raw training rows, evaluation rows, and summary are in results/.
+Recorded on 2026-11-19 with 900 generated vehicles/hour on each approach. Each DQN trained for 160 episodes on seeds 42–201. The final evaluation used 10 distinct shared seeds 300–309, separate from training. Values below are mean ± sample standard deviation across those seeds:
+
+| Controller | Episode return | Mean queue (vehicles) | Completed-trip mean wait (s) | Arrivals per episode |
+|---|---:|---:|---:|---:|
+| DQN rich (9 features) | -238.120 ± 5.867 | 11.906 ± 0.293 | 13.551 ± 0.666 | 219.1 ± 2.7 |
+| DQN simple (3 features) | -245.047 ± 7.706 | 12.252 ± 0.385 | 15.388 ± 0.561 | 210.2 ± 2.7 |
+| Fixed time (15-second interval) | -245.047 ± 7.706 | 12.252 ± 0.385 | 15.388 ± 0.561 | 210.2 ± 2.7 |
+| Random | -300.007 ± 21.682 | 15.000 ± 1.084 | 17.636 ± 2.865 | 213.9 ± 13.9 |
+
+In this one training run, the richer observation had better averages than the simple observation on these metrics. The simple DQN matched the fixed-time controller on all 10 evaluation seeds. This result is descriptive only: one training run per state mode and 10 simulation seeds do not establish statistical significance or generalization. Waiting time includes completed trips only; vehicles still in SUMO at episode end are excluded. The generated traffic is a synthetic peak-load scenario, not a model calibrated with local traffic counts. Raw results and sample standard deviations are in results/high_demand_evaluation.csv and results/high_demand_evaluation_summary.csv; figures are in results/figures_high_demand/.
+
+## Earlier balanced-demand pilot (separate from the current profile)
+
+Run on 2026-11-19 with 300 generated vehicles/hour per approach, 20 training episodes per state mode, and three shared evaluation seeds. On each evaluation seed, both trained DQNs matched the fixed-time baseline's episode return, queue, completed-trip waiting time, throughput, and simulated duration. Across the three seeds the mean queue was 1.332 vehicles, completed-trip mean waiting time was 3.729 seconds, and throughput was 93.667 vehicles per 300-second episode. The seeded-random controller averaged 4.260 vehicles in queue, 12.267 seconds completed-trip waiting time, and 89.333 arrivals. The raw training rows, evaluation rows, summary, and figures are retained separately in results/.
 
 This is a small engineering pilot, not a statistically powered result. The exact match with fixed-time shows that these checkpoints did not demonstrate an advantage over that baseline. Completed-trip waiting time excludes vehicles still in the network when an episode ends, so read it with queue and throughput.
 

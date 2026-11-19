@@ -7,14 +7,14 @@
   "decision_interval_seconds": 15.0,
   "pilot_seed": 42,
   "episode_end_seconds": 300,
-  "vehicles_per_hour_per_approach": 300,
+  "vehicles_per_hour_per_approach": 900,
   "training": {
-    "episodes": 20,
+    "episodes": 160,
     "seed_start": 42,
     "learning_starts": 32
   },
   "evaluation": {
-    "seeds": [100, 101, 102],
+    "seeds": [300, 301, 302, 303, 304, 305, 306, 307, 308, 309],
     "fixed_time_switch_every_decisions": 1
   },
   "dqn": {
@@ -48,12 +48,13 @@
     "1": "request_other_green_axis"
   },
   "reward": "negative mean total queue count over the simulation steps covered by one environment step",
-  "output_csv": "results/train_episodes.csv",
-  "evaluation_csv": "results/evaluation.csv",
+  "output_csv": "results/high_demand_train_episodes.csv",
+  "evaluation_csv": "results/high_demand_evaluation.csv",
+  "evaluation_summary_csv": "results/high_demand_evaluation_summary.csv",
   "notes": [
-    "The 300 vehicles/hour per approach, 300-second episode, and 15-second decision interval define this engineering pilot only; they are not validated research settings.",
+    "The 900 vehicles/hour per approach, 300-second episode, and 15-second decision interval define a synthetic high-demand engineering pilot only. They are not calibrated from local traffic counts and must not be described as measured real-world demand.",
     "The 15-second interval was selected after observing the generated 3-second yellow clearance; switching leaves 12 seconds on the target green before the next decision.",
-    "The 20-episode-per-state training run and three-seed evaluation are a reproducible engineering pilot, not a statistically powered comparison.",
+    "Train both observation sizes for 160 episodes on paired seeds 42 through 201 and evaluate on distinct shared seeds 300 through 309. One training run per state is still not a statistically powered comparison.",
     "Mean waiting time is the arithmetic mean of SUMO TripInfo waitingTime for completed vehicles only; vehicles unfinished at episode end are excluded.",
     "A pilot run is not evidence that the DQN learned or that one state representation is better."
   ]
