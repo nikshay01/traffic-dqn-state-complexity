@@ -1,0 +1,27 @@
+{
+  "verified": true,
+  "source_network_file": "simulation/intersection.net.xml",
+  "source_sumo_config": "simulation/config.sumocfg",
+  "traffic_light_id": "J0",
+  "incoming_lanes": {
+    "north": ["N_in_0"],
+    "south": ["S_in_0"],
+    "east": ["E_in_0"],
+    "west": ["W_in_0"]
+  },
+  "phase_program_id": "0",
+  "green_phase_indices": {
+    "north_south": 0,
+    "east_west": 2
+  },
+  "clearance_phase_indices_by_switch": {
+    "north_south_to_east_west": [1],
+    "east_west_to_north_south": [3]
+  },
+  "clearance_phase_durations_seconds": {
+    "north_south_to_east_west": [3.0],
+    "east_west_to_north_south": [3.0]
+  },
+  "decision_interval_seconds": 15.0,
+  "verification_notes": "Observed in the netconvert 1.28.0 output: traffic light J0, program 0; phase 0 serves the N_in and S_in link indices (0-3 and 8-11), phase 2 serves E_in and W_in (4-7 and 12-15), and phases 1 and 3 are 3-second yellow clearances. Incoming lane IDs were read from intersection.net.xml. The 15-second pilot decision interval is a design choice, giving a switched axis 12 seconds of green after its 3-second clearance."
+}

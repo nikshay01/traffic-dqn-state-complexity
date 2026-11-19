@@ -4,30 +4,18 @@
   "sumo_config": "simulation/config.sumocfg",
   "network_manifest": "simulation/network_manifest.json",
   "simulation_step_seconds": 1.0,
-  "decision_interval_seconds": null,
+  "decision_interval_seconds": 15.0,
   "pilot_seed": 42,
+  "episode_end_seconds": 300,
+  "vehicles_per_hour_per_approach": 300,
   "state_modes": {
     "simple": {
       "dimension": 3,
-      "features": [
-        "ns_queue_vehicles",
-        "ew_queue_vehicles",
-        "green_axis"
-      ]
+      "features": ["ns_queue_vehicles", "ew_queue_vehicles", "green_axis"]
     },
     "rich": {
       "dimension": 9,
-      "features": [
-        "ns_queue_vehicles",
-        "ew_queue_vehicles",
-        "green_axis",
-        "ns_wait_s",
-        "ew_wait_s",
-        "ns_mean_speed_mps",
-        "ew_mean_speed_mps",
-        "ns_mean_occupancy",
-        "ew_mean_occupancy"
-      ]
+      "features": ["ns_queue_vehicles", "ew_queue_vehicles", "green_axis", "ns_wait_s", "ew_wait_s", "ns_mean_speed_mps", "ew_mean_speed_mps", "ns_mean_occupancy_fraction", "ew_mean_occupancy_fraction"]
     }
   },
   "action_meanings": {
@@ -37,7 +25,8 @@
   "reward": "negative mean total queue count over the simulation steps covered by one environment step",
   "output_csv": "results/episodes.csv",
   "notes": [
-    "decision_interval_seconds remains unset until the generated signal program and safe decision points are inspected",
-    "a pilot run is not evidence that the DQN learned or that one state representation is better"
+    "The 300 vehicles/hour per approach, 300-second episode, 15-second decision interval, and seed 42 define this smoke-test scenario only; they are not validated research settings.",
+    "The 15-second interval was selected after observing the generated 3-second yellow clearance; switching leaves 12 seconds on the target green before the next decision.",
+    "A pilot run is not evidence that the DQN learned or that one state representation is better."
   ]
 }

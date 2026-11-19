@@ -16,7 +16,7 @@ env.close()
 
 - `reset(seed: int | None = None) -> None` starts a fresh episode using the requested seed.
 - `get_state(mode: str) -> list[float]` accepts only `"simple"` or `"rich"`.
-- `step(action: int, mode: str = "simple") -> tuple[list[float], float, bool, dict]` accepts only actions `0` and `1`, advances to the next legal decision point, and returns the observation in the requested mode.
+- `step(action: int, mode: str = "simple") -> tuple[list[float], float, bool, dict]` accepts only actions `0` and `1`, advances by the configured 15-second pilot decision interval and returns at a legal green decision point, and returns the observation in the requested mode.
 - `close() -> None` closes the TraCI connection and SUMO process.
 - The environment owns all SUMO-specific IDs and phase handling. The DQN receives only numeric observations and returns an action.
 - The environment must use the network's verified signal program and its clearance phases. It must not invent lane IDs, signal IDs, phase indices, or signal-state strings.
@@ -34,13 +34,13 @@ Features use incoming lanes grouped by the verified north-south and east-west ap
 | Mode | Length | Ordered features |
 | --- | ---: | --- |
 | `simple` | 3 | `ns_queue_vehicles`, `ew_queue_vehicles`, `green_axis` |
-| `rich` | 9 | `ns_queue_vehicles`, `ew_queue_vehicles`, `green_axis`, `ns_wait_s`, `ew_wait_s`, `ns_mean_speed_mps`, `ew_mean_speed_mps`, `ns_mean_occupancy`, `ew_mean_occupancy` |
+| `rich` | 9 | `ns_queue_vehicles`, `ew_queue_vehicles`, `green_axis`, `ns_wait_s`, `ew_wait_s`, `ns_mean_speed_mps`, `ew_mean_speed_mps`, `ns_mean_occupancy_fraction`, `ew_mean_occupancy_fraction` |
 
 Definitions:
 
 - Queue is the sum of halting vehicles across the verified incoming lanes for that axis.
 - Waiting time is the sum of lane waiting-time readings across those incoming lanes.
-- Mean speed and occupancy are the arithmetic mean across the incoming lanes for that axis; use `0.0` when an axis has no usable lane reading.
+- Mean speed is the arithmetic mean across the incoming lanes for that axis. Convert each lane occupancy percentage to a 0-1 fraction by dividing by 100, then average; use `0.0` when an axis has no usable lane reading.
 - `green_axis` is `0.0` for north-south and `1.0` for east-west. States are returned only at legal decision points with a known active green axis.
 - Return finite Python floats in the listed order. The DQN may convert the list to its tensor type.
 
@@ -72,4 +72,5 @@ agent.load(path)
 
 ## Pending network facts
 
-Before DQN integration, the environment owner must provide and verify `simulation/network_manifest.json`, including the actual traffic-light ID, actual incoming lane IDs grouped by approach, the active green phases, clearance phases, and the legal decision points. Capture the source (generated network/config and inspection command) in the PR description or README.
+The lead generated and inspected `simulation/intersection.net.xml` and checked the scenario with SUMO 1.28.0. The observed IDs and phases are recorded in `simulation/network_manifest.json`. Re-verify them if the network or signal program changes. The environment must use those observed phases and never replace the yellow clearance with a guessed signal string.
+
