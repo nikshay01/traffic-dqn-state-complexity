@@ -206,7 +206,7 @@ class SumoEnvironment:
             "axis_after": axis_after,
             "elapsed_simulation_s": elapsed,
             "mean_total_queue_vehicles": -reward,
-            "arrived_vehicles_this_step": self._arrived_vehicles,
+            "arrived_vehicles_total": self._arrived_vehicles,
         }
         return observation, float(reward), bool(done), info
 
@@ -260,3 +260,4 @@ class SumoEnvironment:
 
     def __exit__(self, *_: object) -> None:
         self.close()
+

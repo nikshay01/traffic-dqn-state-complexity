@@ -16,7 +16,7 @@ env.close()
 
 - `reset(seed: int | None = None) -> None` starts a fresh episode using the requested seed.
 - `get_state(mode: str) -> list[float]` accepts only `"simple"` or `"rich"`.
-- `step(action: int, mode: str = "simple") -> tuple[list[float], float, bool, dict]` accepts only actions `0` and `1`, advances by the configured 15-second pilot decision interval and returns at a legal green decision point, and returns the observation in the requested mode.
+- `step(action: int, mode: str = "simple") -> tuple[list[float], float, bool, dict]` accepts only actions `0` and `1`, advances by the configured 15-second pilot decision interval and returns the observation in the requested mode at a legal green decision point.
 - `close() -> None` closes the TraCI connection and SUMO process.
 - The environment owns all SUMO-specific IDs and phase handling. The DQN receives only numeric observations and returns an action.
 - The environment must use the network's verified signal program and its clearance phases. It must not invent lane IDs, signal IDs, phase indices, or signal-state strings.
@@ -25,7 +25,7 @@ env.close()
 
 - `0`: keep the currently active north-south or east-west green axis.
 - `1`: request the other axis at the next legal decision point.
-- SUMO's verified yellow/all-red clearance sequence is handled by the environment. The agent never sets a raw signal string.
+- SUMO's verified yellow clearance phase is handled by the environment. The agent never sets a raw signal string.
 
 ## State meaning
 
@@ -70,7 +70,8 @@ agent.load(path)
 - The environment owner must document the exact SUMO-derived calculation used for every reported metric.
 - Keep raw run output. Never fill result rows with examples or expected values.
 
-## Pending network facts
+## Network facts and re-verification
 
 The lead generated and inspected `simulation/intersection.net.xml` and checked the scenario with SUMO 1.28.0. The observed IDs and phases are recorded in `simulation/network_manifest.json`. Re-verify them if the network or signal program changes. The environment must use those observed phases and never replace the yellow clearance with a guessed signal string.
+
 
