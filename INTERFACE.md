@@ -74,4 +74,21 @@ agent.load(path)
 
 The lead generated and inspected `simulation/intersection.net.xml` and checked the scenario with SUMO 1.28.0. The observed IDs and phases are recorded in `simulation/network_manifest.json`. Re-verify them if the network or signal program changes. The environment must use those observed phases and never replace the yellow clearance with a guessed signal string.
 
+## Pilot run additions
+
+The environment reset method also accepts an optional TripInfo output path:
+
+    env.reset(seed=42, tripinfo_path="results/tripinfo_example.xml")
+
+After the episode, close SUMO before reading the finalized metrics:
+
+    env.close()
+    metrics = env.get_episode_metrics()
+
+Mean queue is the average total halted-vehicle count across every one-second simulation step. Throughput is the accumulated SUMO arrived-vehicle count. Mean waiting time is the average waitingTime value in completed-trip TripInfo records; vehicles still in the network at episode end are excluded. If no trips completed, mean_wait_s is null.
+
+The engineering pilot trains each state mode for 20 episodes on matching seeds 42–61. Evaluation uses the same three demand seeds for each controller: 100, 101, and 102. The fixed-time baseline switches at each decision interval (15 seconds including the network's 3-second verified yellow clearance); the random baseline samples seeded actions. This budget is an integration check and does not establish policy convergence or a statistically significant difference.
+
+DQN inputs are divided by the fixed feature scales in config/experiment.json. Both state modes use the same divisor for queue and green-axis features. Rich-state waiting time uses the 300-second episode horizon as a scale, speed uses the generated network's 13.89 m/s lane speed limit, and occupancy and green-axis fractions are unchanged. These divisors are scaling references, not clipping limits.
+
 

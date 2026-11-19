@@ -8,6 +8,31 @@
   "pilot_seed": 42,
   "episode_end_seconds": 300,
   "vehicles_per_hour_per_approach": 300,
+  "training": {
+    "episodes": 20,
+    "seed_start": 42,
+    "learning_starts": 32
+  },
+  "evaluation": {
+    "seeds": [100, 101, 102],
+    "fixed_time_switch_every_decisions": 1
+  },
+  "dqn": {
+    "hidden_dims": [64, 64],
+    "learning_rate": 0.001,
+    "gamma": 0.99,
+    "batch_size": 32,
+    "replay_capacity": 5000,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.05,
+    "epsilon_decay": 0.995,
+    "target_update_interval": 100,
+    "device": "auto"
+  },
+  "state_scales": {
+    "simple": [20.0, 20.0, 1.0],
+    "rich": [20.0, 20.0, 1.0, 300.0, 300.0, 13.89, 13.89, 1.0, 1.0]
+  },
   "state_modes": {
     "simple": {
       "dimension": 3,
@@ -23,10 +48,13 @@
     "1": "request_other_green_axis"
   },
   "reward": "negative mean total queue count over the simulation steps covered by one environment step",
-  "output_csv": "results/episodes.csv",
+  "output_csv": "results/train_episodes.csv",
+  "evaluation_csv": "results/evaluation.csv",
   "notes": [
-    "The 300 vehicles/hour per approach, 300-second episode, 15-second decision interval, and seed 42 define this smoke-test scenario only; they are not validated research settings.",
+    "The 300 vehicles/hour per approach, 300-second episode, and 15-second decision interval define this engineering pilot only; they are not validated research settings.",
     "The 15-second interval was selected after observing the generated 3-second yellow clearance; switching leaves 12 seconds on the target green before the next decision.",
+    "The 20-episode-per-state training run and three-seed evaluation are a reproducible engineering pilot, not a statistically powered comparison.",
+    "Mean waiting time is the arithmetic mean of SUMO TripInfo waitingTime for completed vehicles only; vehicles unfinished at episode end are excluded.",
     "A pilot run is not evidence that the DQN learned or that one state representation is better."
   ]
 }

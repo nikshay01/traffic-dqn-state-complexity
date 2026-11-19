@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 results/*.csv
+!results/train_episodes.csv
+!results/evaluation.csv
+!results/evaluation_summary.csv
 results/*.xml
 results/*.json
+results/**/*.xml
+results/**/*.json
+results/**/*.pt
 !results/.gitkeep

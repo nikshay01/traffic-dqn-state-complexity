@@ -6,6 +6,7 @@ import json
 import math
 import os
 import shutil
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
@@ -66,6 +67,7 @@ class SumoEnvironment:
         self._arrived_vehicles = 0
         self._episode_queue_sum = 0.0
         self._episode_sim_steps = 0
+        self._tripinfo_path: Path | None = None
 
     @staticmethod
     def _find_sumo_binary() -> str:
@@ -91,19 +93,31 @@ class SumoEnvironment:
             "or install SUMO and add its bin folder to PATH."
         )
 
-    def reset(self, seed: int | None = None) -> None:
+    def reset(
+        self,
+        seed: int | None = None,
+        tripinfo_path: str | Path | None = None,
+    ) -> None:
         if self._started:
             self.close()
         chosen_seed = self.experiment["pilot_seed"] if seed is None else seed
-        traci.start(
-            [
-                self.sumo_binary,
-                "-c",
-                str(self.sumo_config_path),
-                "--seed",
-                str(chosen_seed),
-            ]
-        )
+        self._tripinfo_path = None
+        command = [
+            self.sumo_binary,
+            "-c",
+            str(self.sumo_config_path),
+            "--seed",
+            str(chosen_seed),
+            "--no-step-log",
+            "true",
+        ]
+        if tripinfo_path is not None:
+            self._tripinfo_path = Path(tripinfo_path)
+            if not self._tripinfo_path.is_absolute():
+                self._tripinfo_path = self.project_root / self._tripinfo_path
+            self._tripinfo_path.parent.mkdir(parents=True, exist_ok=True)
+            command.extend(["--tripinfo-output", str(self._tripinfo_path)])
+        traci.start(command)
         self._started = True
         self._arrived_vehicles = 0
         self._episode_queue_sum = 0.0
@@ -216,6 +230,39 @@ class SumoEnvironment:
                 traci.close()
             finally:
                 self._started = False
+
+    def get_episode_metrics(self) -> dict[str, float | int | None]:
+        """Return aggregate episode metrics after SUMO has been closed.
+
+        Mean waiting time is computed from TripInfo records for completed trips.
+        Vehicles that have not arrived by the end of the episode are omitted
+        from this mean because SUMO does not emit a completed-trip record for
+        them by default.
+        """
+        if self._started:
+            raise RuntimeError("Call close() before reading finalized episode metrics")
+        mean_wait_s: float | None = None
+        if self._tripinfo_path is not None and self._tripinfo_path.is_file():
+            tree = ET.parse(self._tripinfo_path)
+            waits = [
+                float(element.attrib["waitingTime"])
+                for element in tree.getroot().iter("tripinfo")
+                if "waitingTime" in element.attrib
+            ]
+            if waits:
+                mean_wait_s = sum(waits) / len(waits)
+
+        mean_queue = (
+            self._episode_queue_sum / self._episode_sim_steps
+            if self._episode_sim_steps
+            else 0.0
+        )
+        return {
+            "mean_wait_s": mean_wait_s,
+            "mean_queue_vehicles": float(mean_queue),
+            "throughput_vehicles": int(self._arrived_vehicles),
+            "simulated_seconds": float(self._episode_sim_steps * self.step_length),
+        }
 
     def _axis_for_current_phase(self) -> str:
         phase = int(traci.trafficlight.getPhase(self.traffic_light_id))
