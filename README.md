@@ -63,6 +63,7 @@ Train both state representations on paired seeds 42 through 61, then evaluate th
 python -m experiments.train
 python -m experiments.evaluate
 python -m analysis.summarize_evaluation
+python -m analysis.plot_results
 ~~~
 
 For the complete train → evaluate → summarize acceptance run in one command:
@@ -72,6 +73,8 @@ python -m experiments.run_pilot --device cpu
 ~~~
 
 The runner stops if a step fails. Optional flags include --episodes, --seed-start, and --evaluation-seeds.
+
+Matplotlib figures are saved as PNG and PDF under results/figures/. Rerun analysis.plot_results after you update the CSV results.
 
 The default is 20 episodes per state mode, with 300 simulated seconds per episode. For a fast wiring check, run python -m experiments.train --episodes 1. This is an engineering pilot, not enough evidence for convergence or for claiming one observation is better. The training and evaluation CSVs and their summary are tracked as pilot records; temporary wiring-check CSVs, TripInfo XML files, and model checkpoints remain under results/ and are ignored by Git.
 
