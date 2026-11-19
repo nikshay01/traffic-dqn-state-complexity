@@ -65,6 +65,14 @@ python -m experiments.evaluate
 python -m analysis.summarize_evaluation
 ~~~
 
+For the complete train → evaluate → summarize acceptance run in one command:
+
+~~~powershell
+python -m experiments.run_pilot --device cpu
+~~~
+
+The runner stops if a step fails. Optional flags include --episodes, --seed-start, and --evaluation-seeds.
+
 The default is 20 episodes per state mode, with 300 simulated seconds per episode. For a fast wiring check, run python -m experiments.train --episodes 1. This is an engineering pilot, not enough evidence for convergence or for claiming one observation is better. The training and evaluation CSVs and their summary are tracked as pilot records; temporary wiring-check CSVs, TripInfo XML files, and model checkpoints remain under results/ and are ignored by Git.
 
 Mean queue is averaged over one-second SUMO steps. Throughput counts vehicles that arrived before episode end. Mean waiting time averages SUMO TripInfo waitingTime for completed trips only; unfinished trips are excluded.
