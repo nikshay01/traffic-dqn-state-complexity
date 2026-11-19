@@ -1,0 +1,23 @@
+{
+  "verified": false,
+  "source_network_file": null,
+  "source_sumo_config": null,
+  "traffic_light_id": null,
+  "incoming_lanes": {
+    "north": [],
+    "south": [],
+    "east": [],
+    "west": []
+  },
+  "phase_program_id": null,
+  "green_phase_indices": {
+    "north_south": null,
+    "east_west": null
+  },
+  "clearance_phase_indices_by_switch": {
+    "north_south_to_east_west": [],
+    "east_west_to_north_south": []
+  },
+  "decision_interval_seconds": null,
+  "verification_notes": "Replace null/empty values only after inspecting the generated SUMO network and signal program. Do not guess IDs or phases."
+}

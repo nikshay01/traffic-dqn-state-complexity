@@ -1,0 +1,43 @@
+{
+  "pilot_only": true,
+  "sumo_version": "1.28.0",
+  "sumo_config": "simulation/config.sumocfg",
+  "network_manifest": "simulation/network_manifest.json",
+  "simulation_step_seconds": 1.0,
+  "decision_interval_seconds": null,
+  "pilot_seed": 42,
+  "state_modes": {
+    "simple": {
+      "dimension": 3,
+      "features": [
+        "ns_queue_vehicles",
+        "ew_queue_vehicles",
+        "green_axis"
+      ]
+    },
+    "rich": {
+      "dimension": 9,
+      "features": [
+        "ns_queue_vehicles",
+        "ew_queue_vehicles",
+        "green_axis",
+        "ns_wait_s",
+        "ew_wait_s",
+        "ns_mean_speed_mps",
+        "ew_mean_speed_mps",
+        "ns_mean_occupancy",
+        "ew_mean_occupancy"
+      ]
+    }
+  },
+  "action_meanings": {
+    "0": "keep_current_green_axis",
+    "1": "request_other_green_axis"
+  },
+  "reward": "negative mean total queue count over the simulation steps covered by one environment step",
+  "output_csv": "results/episodes.csv",
+  "notes": [
+    "decision_interval_seconds remains unset until the generated signal program and safe decision points are inspected",
+    "a pilot run is not evidence that the DQN learned or that one state representation is better"
+  ]
+}
