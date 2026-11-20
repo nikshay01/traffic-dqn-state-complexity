@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import csv
 import math
+import os
 from pathlib import Path
 
 from docx import Document
 from docx.enum.section import WD_SECTION
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT, WD_TABLE_ALIGNMENT
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Cm, Pt
@@ -16,8 +17,12 @@ from docx.shared import Cm, Pt
 
 ROOT = Path(__file__).resolve().parents[1]
 PAPER = ROOT / "paper"
-OUT = PAPER / "State_Representation_DQN_Traffic_Signal_Pilot.docx"
+OUT = Path(os.environ.get(
+    "DQN_PAPER_OUT", PAPER / "State_Representation_DQN_Traffic_Signal_Pilot.docx"
+))
 SUMMARY = ROOT / "results" / "high_demand_evaluation_summary.csv"
+_BODY_START_AFTER_HEADING = False
+_LAST_HEADING_LEVEL: int | None = None
 
 
 def read_summary() -> dict[tuple[str, str], dict[str, str]]:
@@ -64,8 +69,8 @@ def set_page(section):
     section.bottom_margin = Cm(4.2)
     section.left_margin = Cm(2.6)
     section.right_margin = Cm(2.6)
-    section.header_distance = Cm(1.5)
-    section.footer_distance = Cm(1.5)
+    section.header_distance = Cm(1.4)
+    section.footer_distance = Cm(2.5)
 
 
 def set_columns(section, count: int, spacing_cm: float = 0.8):
@@ -92,7 +97,11 @@ def paragraph_format(p, *, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=4,
     return p
 
 
-def add_body(doc, text: str, indent=True, *, keep=False):
+def add_body(doc, text: str, indent=None, *, keep=False):
+    global _BODY_START_AFTER_HEADING
+    if indent is None:
+        indent = not _BODY_START_AFTER_HEADING
+    _BODY_START_AFTER_HEADING = False
     p = doc.add_paragraph(style="Normal")
     paragraph_format(p, first=0.5 if indent else 0)
     p.paragraph_format.keep_together = keep
@@ -101,32 +110,51 @@ def add_body(doc, text: str, indent=True, *, keep=False):
 
 
 def add_heading(doc, text: str, level=1):
+    global _BODY_START_AFTER_HEADING, _LAST_HEADING_LEVEL
     p = doc.add_paragraph(style=f"Heading {level}")
     p.paragraph_format.keep_with_next = True
     p.paragraph_format.keep_together = True
-    p.paragraph_format.space_before = Pt(10 if level == 1 else 7)
-    p.paragraph_format.space_after = Pt(5 if level == 1 else 4)
-    p.paragraph_format.line_spacing = 1.0
-    p.paragraph_format.first_line_indent = Cm(0)
-    p.paragraph_format.left_indent = Cm(0)
+    if level == 1:
+        before = 0 if text == "1 INTRODUCTION" else 24
+        after, line, left, hanging, size = 12, 15, 0.7, 0.7, 13
+        text = text.upper()
+    elif level == 2:
+        before = 0 if _LAST_HEADING_LEVEL == 1 else 11
+        after, line, left, hanging, size = 11, 13, 1.0, 1.0, 12
+    else:
+        before = 0 if _LAST_HEADING_LEVEL == 2 else 10
+        after, line, left, hanging, size = 10, 12, 1.0, 1.0, 11
+    p.paragraph_format.space_before = Pt(before)
+    p.paragraph_format.space_after = Pt(after)
+    p.paragraph_format.line_spacing = Pt(line)
+    p.paragraph_format.first_line_indent = Cm(-hanging)
+    p.paragraph_format.left_indent = Cm(left)
     p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-    set_font(p.add_run(text), 13 if level == 1 else (12 if level == 2 else 11), bold=True)
+    set_font(p.add_run(text), size, bold=True)
+    _BODY_START_AFTER_HEADING = True
+    _LAST_HEADING_LEVEL = level
     return p
 
 
-def add_caption(doc, text: str, *, before=2, after=3, figure=False):
+def add_caption(doc, text: str, *, before=6, after=12, figure=False):
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=after, before=before)
+    alignment = WD_ALIGN_PARAGRAPH.JUSTIFY if len(text) > 120 else WD_ALIGN_PARAGRAPH.CENTER
+    paragraph_format(p, alignment=alignment, size_after=after, before=before, line=1.0)
     p.paragraph_format.keep_with_next = not figure
     set_font(p.add_run(text), 9)
     return p
 
 
-def add_equation(doc, text: str):
+def add_equation(doc, text: str, number: int):
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=5, before=2)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, size_after=12, before=12, line=1.0)
     p.paragraph_format.keep_together = True
-    set_font(p.add_run(text), 9.5)
+    p.paragraph_format.tab_stops.add_tab_stop(Cm(3.75), WD_TAB_ALIGNMENT.CENTER)
+    p.paragraph_format.tab_stops.add_tab_stop(Cm(7.5), WD_TAB_ALIGNMENT.RIGHT)
+    p.add_run("\t")
+    set_font(p.add_run(text), 9)
+    p.add_run("\t")
+    set_font(p.add_run(f"({number})"), 9)
     return p
 
 
@@ -169,10 +197,14 @@ def set_cell_margins(cell, top=50, start=65, bottom=50, end=65):
 
 
 def add_table(doc, caption: str, headers: list[str], rows: list[list[str]], widths_cm: list[float], *, font=8):
-    add_caption(doc, caption, before=1, after=3)
+    add_caption(doc, caption, before=12, after=6)
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
+    header_props = table.rows[0]._tr.get_or_add_trPr()
+    repeat_header = OxmlElement("w:tblHeader")
+    repeat_header.set(qn("w:val"), "true")
+    header_props.append(repeat_header)
     for index, (cell, text, width) in enumerate(zip(table.rows[0].cells, headers, widths_cm)):
         cell.width = Cm(width)
         cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
@@ -185,6 +217,8 @@ def add_table(doc, caption: str, headers: list[str], rows: list[list[str]], widt
         set_cell_margins(cell)
     for row_values in rows:
         cells = table.add_row().cells
+        row_props = table.rows[-1]._tr.get_or_add_trPr()
+        row_props.append(OxmlElement("w:cantSplit"))
         for index, (cell, text, width) in enumerate(zip(cells, row_values, widths_cm)):
             cell.width = Cm(width)
             cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
@@ -208,7 +242,7 @@ def add_full_width_figure(doc, image_name: str, caption: str, *, width_cm=15.7):
     p.paragraph_format.keep_together = True
     p.paragraph_format.keep_with_next = True
     p.add_run().add_picture(str(PAPER / "figures" / image_name), width=Cm(width_cm))
-    add_caption(doc, caption, before=2, after=3, figure=True)
+    add_caption(doc, caption, before=6, after=12, figure=True)
     add_section(doc, 2)
 
 
@@ -233,32 +267,34 @@ def main():
 
     # SCITEPRESS front matter.
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=10, before=0)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=0, before=0, line=Pt(17))
     p.paragraph_format.keep_with_next = True
     set_font(p.add_run("A Pilot Comparison of State Representations for DQN Traffic Signal Control"), 15, bold=True)
 
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=5)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=0, before=24, line=Pt(13))
     p.paragraph_format.keep_with_next = True
     set_font(p.add_run("Nikshay Kumar Nagda¹, Aashutosh Nagda¹, Neel Soni¹, Keiyur Savani¹"), 11)
 
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=3)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=0, line=Pt(11))
     p.paragraph_format.keep_with_next = True
     set_font(p.add_run("¹Department of IT and Computer Science, Parul University; MCA, Parul Institute of Engineering and Technology, Post-Limda, Waghodia, Vadodara, India"), 9, italic=True)
 
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=13)
-    set_font(p.add_run("nikshay724@gmail.com; ashutoshnagda07@gmail.com"), 9, italic=True)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=0, line=Pt(11))
+    set_font(p.add_run("nikshay724@gmail.com, ashutoshnagda07@gmail.com"), 9, italic=True)
 
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=7, before=48, left=2.0, first=-2.0)
-    set_font(p.add_run("Keywords: "), 9, bold=True)
-    set_font(p.add_run("Deep reinforcement learning, Deep Q-network, Traffic signal control, State representation, SUMO."), 9)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=0, before=48,
+                     left=2.0, first=-2.0, line=Pt(11))
+    set_font(p.add_run("Keywords: "), 9)
+    set_font(p.add_run("Deep Reinforcement Learning, Deep Q-Network, Traffic Signal Control, State Representation, SUMO."), 9)
 
     p = doc.add_paragraph()
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=15, before=12, left=2.0, first=-2.0)
-    set_font(p.add_run("Abstract: "), 9, bold=True)
+    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=30, before=12,
+                     left=2.0, first=-2.0, line=Pt(11))
+    set_font(p.add_run("Abstract: "), 9)
     abstract = (
         "This pilot examines whether adding traffic-state features changes deep Q-network (DQN) performance at one synthetic, "
         "high-demand SUMO intersection. We trained a three-feature controller and a nine-feature controller for 160 episodes "
@@ -409,7 +445,8 @@ def main():
         "maximize arrivals alone. The evaluation still reports arrivals and completed-trip waiting time because they capture "
         "different aspects of episode performance."
     )
-    add_equation(doc, "rₜ = −(1 / Δ) Σₖ₌₁ᵟ Qₜ,ₖ,      G = Σₜ₌₁²⁰ rₜ,      Δ = 15 simulation seconds.")
+    add_equation(doc, "rₜ = −Δ⁻¹ Σₖ₌₁^Δ Qₜ,ₖ", 1)
+    add_equation(doc, "G = Σₜ₌₁²⁰ rₜ,  Δ = 15 s", 2)
 
     add_heading(doc, "4 STATE REPRESENTATIONS", 1)
     add_body(doc,
@@ -459,7 +496,8 @@ def main():
         "estimated value at the next state, unless the transition is terminal. The target network is held constant between "
         "scheduled copies from the online network."
     )
-    add_equation(doc, "yᵢ = rᵢ + γ (1 − dᵢ) maxₐ′ Qθ⁻(s′ᵢ, a′),      L(θ) = mean SmoothL1(Qθ(sᵢ, aᵢ), yᵢ).")
+    add_equation(doc, "yᵢ = rᵢ + γ (1 − dᵢ) maxₐ′ Qθ⁻(s′ᵢ, a′)", 3)
+    add_equation(doc, "L(θ) = mean SmoothL1(Qθ(sᵢ, aᵢ), yᵢ)", 4)
     add_body(doc,
         "The optimizer is Adam with learning rate 0.001 and discount γ = 0.99. The implementation uses Smooth L1 (Huber) "
         "loss, clips gradient norm at 10, and copies policy weights to the target network every 100 gradient steps. These "
@@ -482,35 +520,27 @@ def main():
     )
 
     add_section(doc, 1)
-    algo = doc.add_table(rows=1, cols=1)
-    algo.alignment = WD_TABLE_ALIGNMENT.CENTER
-    algo.autofit = False
-    algo.cell(0, 0).width = Cm(15.7)
-    algo.cell(0, 0).text = ""
-    cell = algo.cell(0, 0)
-    set_cell_border(cell, top={"val":"single","sz":6,"color":"333333"},
-                    bottom={"val":"single","sz":6,"color":"333333"},
-                    left={"val":"single","sz":4,"color":"aaaaaa"},
-                    right={"val":"single","sz":4,"color":"aaaaaa"})
-    set_cell_margins(cell, top=100, start=125, bottom=100, end=125)
-    p = cell.paragraphs[0]
-    paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, size_after=4)
-    set_font(p.add_run("Algorithm 1. Shared DQN training loop"), 9, bold=True)
     algo_lines = [
-        "Input: observation mode m ∈ {simple, rich}; 160 episodes; gamma 0.99; epsilon schedule 1.0 → 0.05.",
-        "Initialize online Q network Qθ, target Q network Qθ⁻ ← Qθ, Adam optimizer, and replay buffer B.",
-        "For each episode, reset SUMO with the next training seed and obtain normalized observation s.",
-        "For each of 20 decision intervals: choose random action with probability epsilon; otherwise choose argmaxₐ Qθ(s,a).",
-        "Apply the action through the environment; SUMO handles yellow clearance and advances 15 seconds; observe r, s′, done.",
-        "Append (s, a, r, s′, done) to B. If |B| ≥ 32, sample 32 transitions and compute y = r + gamma(1−done) maxₐ′Qθ⁻(s′,a′).",
-        "Update θ by minimizing mean SmoothL1(Qθ(s,a), y) with Adam; clip gradient norm to 10.",
-        "Every 100 gradient updates, copy Qθ to Qθ⁻. After each training action, set epsilon = max(0.05, 0.995 × epsilon).",
-        "At evaluation, use the saved policy greedily with exploration disabled; report episode outcomes for shared seeds 300–309.",
+        "Input: mode m ∈ {simple, rich}; 160 episodes; γ = 0.99.",
+        "Initialize Qθ, target Qθ⁻ ← Qθ, Adam, replay B, ε = 1.0.",
+        "For each episode, reset SUMO with the next training seed; observe s.",
+        "For each of 20 decision intervals:",
+        "    Select a random action with probability ε; else argmaxₐ Qθ(s, a).",
+        "    Execute action; step SUMO 15 s; observe r, s′, done.",
+        "    Store (s, a, r, s′, done) in B.",
+        "    If |B| ≥ 32, sample 32 and compute the target y.",
+        "    Update Qθ with SmoothL1 loss; clip gradient norm to 10.",
+        "    Every 100 updates, copy online weights to Qθ⁻.",
+        "    ε ← max(0.05, 0.995ε).",
+        "At evaluation, act greedily on shared seeds 300–309.",
     ]
     for line in algo_lines:
-        p = cell.add_paragraph()
-        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, size_after=2, first=0.25)
-        set_font(p.add_run(line), 8.4)
+        p = doc.add_paragraph()
+        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.LEFT, size_after=0, line=1.0)
+        p.paragraph_format.keep_with_next = True
+        set_font(p.add_run(line), 9, name="Courier New")
+    algo_caption = add_caption(doc, "Algorithm 1: Shared DQN training loop.", before=6, after=12)
+    algo_caption.paragraph_format.keep_with_next = False
     add_section(doc, 2)
     add_body(doc,
         "The pseudocode emphasizes the boundary between agent and simulator. The network never changes a traffic-light "
@@ -806,7 +836,7 @@ def main():
     ]
     for index, reference in enumerate(references):
         p = doc.add_paragraph()
-        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=4, left=0.35, first=-0.35, line=1.0)
+        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=4, left=0.5, first=-0.5, line=1.0)
         fragment = italic_fragments[index][0]
         if fragment in reference:
             before, after = reference.split(fragment, 1)
@@ -817,7 +847,8 @@ def main():
             set_font(p.add_run(reference), 9)
 
 
-    add_heading(doc, "APPENDIX A: READING THE EPISODE RECORDS", 1)
+    add_heading(doc, "APPENDIX", 1)
+    add_heading(doc, "Reading the Episode Records", 2)
     add_body(doc,
         "The raw CSV files are the source for the tables and figures. Each training or evaluation row represents one completed "
         "300-second simulation episode. The column names below are preserved as written so a reader can match the manuscript "
@@ -849,7 +880,7 @@ def main():
         "and standard-deviation plot, and paired-difference plot."
     )
 
-    add_heading(doc, "APPENDIX B: FOLLOW-UP STUDY DESIGN", 1)
+    add_heading(doc, "Follow-up Study Design", 2)
     add_body(doc,
         "A useful next experiment should resolve the main uncertainties in sequence. First, instrument the controller loop to "
         "record the state vector, Q-values, action, active axis, phase, reward, and traffic seed at every decision. This would "
