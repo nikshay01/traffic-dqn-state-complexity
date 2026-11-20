@@ -283,7 +283,9 @@ def main():
 
     p = doc.add_paragraph()
     paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=0, line=Pt(11))
-    set_font(p.add_run("nikshay724@gmail.com, ashutoshnagda07@gmail.com"), 9, italic=True)
+    set_font(p.add_run(
+        "nikshay724@gmail.com, ashutoshnagda07@gmail.com, neelsoni200204@gmail.com, keyursavani20@gmail.com"
+    ), 9, italic=True)
 
     p = doc.add_paragraph()
     paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=0, before=48,
