@@ -14,3 +14,5 @@ results/**/*.xml
 results/**/*.json
 results/**/*.pt
 !results/.gitkeep
+paper/tmp/
+~$*.docx

@@ -203,11 +203,12 @@ def add_table(doc, caption: str, headers: list[str], rows: list[list[str]], widt
 
 def add_full_width_figure(doc, image_name: str, caption: str, *, width_cm=15.7):
     add_section(doc, 1)
-    add_caption(doc, caption, before=3, after=2, figure=True)
     p = doc.add_paragraph()
     paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.CENTER, size_after=4)
     p.paragraph_format.keep_together = True
+    p.paragraph_format.keep_with_next = True
     p.add_run().add_picture(str(PAPER / "figures" / image_name), width=Cm(width_cm))
+    add_caption(doc, caption, before=2, after=3, figure=True)
     add_section(doc, 2)
 
 
@@ -786,6 +787,36 @@ def main():
         "a completed-trip-aware delay analysis, and evaluation under calibrated, varied traffic scenarios."
     , False)
 
+    add_heading(doc, "REFERENCES", 1)
+    references = [
+        "Francis, L., Guda, B., & Biyabani, A. (2024). Optimizing traffic signal control using high-dimensional state representation and efficient deep reinforcement learning. arXiv preprint arXiv:2411.07759. https://doi.org/10.48550/arXiv.2411.07759",
+        "Genders, W., & Razavi, S. (2018). Evaluating reinforcement learning state representations for adaptive traffic signal control. Procedia Computer Science, 130, 26–33. https://doi.org/10.1016/j.procs.2018.04.008",
+        "López, P. Á., Behrisch, M., Bieker-Walz, L., Erdmann, J., Flötteröd, Y.-P., Hilbrich, R., Lücken, L., Rummel, J., Wagner, P., & Wießner, E. (2018). Microscopic traffic simulation using SUMO. In 2018 21st International Conference on Intelligent Transportation Systems (ITSC) (pp. 2575–2582). IEEE. https://doi.org/10.1109/ITSC.2018.8569938",
+        "Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare, M. G., Graves, A., Riedmiller, M., Fidjeland, A. K., Ostrovski, G., Petersen, S., Beattie, C., Sadik, A., Antonoglou, I., King, H., Kumaran, D., Wierstra, D., Legg, S., & Hassabis, D. (2015). Human-level control through deep reinforcement learning. Nature, 518, 529–533. https://doi.org/10.1038/nature14236",
+        "Wei, H., Zheng, G., Yao, H., & Li, Z. (2018). IntelliLight: A reinforcement learning approach for intelligent traffic light control. In Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining (pp. 2496–2505). Association for Computing Machinery. https://doi.org/10.1145/3219819.3220096",
+        "Wei, H., Chen, C., Zheng, G., Wu, K., Gayah, V. V., Xu, K., & Li, Z. (2019). PressLight: Learning max pressure control to coordinate traffic signals in arterial network. In Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining (pp. 1290–1298). Association for Computing Machinery. https://doi.org/10.1145/3292500.3330949",
+    ]
+    italic_fragments = [
+        ("arXiv preprint", "arXiv preprint"),
+        ("Procedia Computer Science, 130", "Procedia Computer Science, 130"),
+        ("2018 21st International Conference on Intelligent Transportation Systems (ITSC)", "2018 21st International Conference on Intelligent Transportation Systems (ITSC)"),
+        ("Nature, 518", "Nature, 518"),
+        ("Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining", "Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining"),
+        ("Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining", "Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining"),
+    ]
+    for index, reference in enumerate(references):
+        p = doc.add_paragraph()
+        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=4, left=0.35, first=-0.35, line=1.0)
+        fragment = italic_fragments[index][0]
+        if fragment in reference:
+            before, after = reference.split(fragment, 1)
+            set_font(p.add_run(before), 9)
+            set_font(p.add_run(fragment), 9, italic=True)
+            set_font(p.add_run(after), 9)
+        else:
+            set_font(p.add_run(reference), 9)
+
+
     add_heading(doc, "APPENDIX A: READING THE EPISODE RECORDS", 1)
     add_body(doc,
         "The raw CSV files are the source for the tables and figures. Each training or evaluation row represents one completed "
@@ -880,35 +911,6 @@ def main():
         "reliably across independently trained policies and different traffic conditions. It is a proposed protocol; none "
         "of these additional runs or analyses were performed for the present pilot."
     )
-
-    add_heading(doc, "REFERENCES", 1)
-    references = [
-        "Francis, L., Guda, B., & Biyabani, A. (2024). Optimizing traffic signal control using high-dimensional state representation and efficient deep reinforcement learning. arXiv preprint arXiv:2411.07759. https://doi.org/10.48550/arXiv.2411.07759",
-        "Genders, W., & Razavi, S. (2018). Evaluating reinforcement learning state representations for adaptive traffic signal control. Procedia Computer Science, 130, 26–33. https://doi.org/10.1016/j.procs.2018.04.008",
-        "López, P. Á., Behrisch, M., Bieker-Walz, L., Erdmann, J., Flötteröd, Y.-P., Hilbrich, R., Lücken, L., Rummel, J., Wagner, P., & Wießner, E. (2018). Microscopic traffic simulation using SUMO. In 2018 21st International Conference on Intelligent Transportation Systems (ITSC) (pp. 2575–2582). IEEE. https://doi.org/10.1109/ITSC.2018.8569938",
-        "Mnih, V., Kavukcuoglu, K., Silver, D., Rusu, A. A., Veness, J., Bellemare, M. G., Graves, A., Riedmiller, M., Fidjeland, A. K., Ostrovski, G., Petersen, S., Beattie, C., Sadik, A., Antonoglou, I., King, H., Kumaran, D., Wierstra, D., Legg, S., & Hassabis, D. (2015). Human-level control through deep reinforcement learning. Nature, 518, 529–533. https://doi.org/10.1038/nature14236",
-        "Wei, H., Zheng, G., Yao, H., & Li, Z. (2018). IntelliLight: A reinforcement learning approach for intelligent traffic light control. In Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining (pp. 2496–2505). Association for Computing Machinery. https://doi.org/10.1145/3219819.3220096",
-        "Wei, H., Chen, C., Zheng, G., Wu, K., Gayah, V. V., Xu, K., & Li, Z. (2019). PressLight: Learning max pressure control to coordinate traffic signals in arterial network. In Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining (pp. 1290–1298). Association for Computing Machinery. https://doi.org/10.1145/3292500.3330949",
-    ]
-    italic_fragments = [
-        ("arXiv preprint", "arXiv preprint"),
-        ("Procedia Computer Science, 130", "Procedia Computer Science, 130"),
-        ("2018 21st International Conference on Intelligent Transportation Systems (ITSC)", "2018 21st International Conference on Intelligent Transportation Systems (ITSC)"),
-        ("Nature, 518", "Nature, 518"),
-        ("Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining", "Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining"),
-        ("Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining", "Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining"),
-    ]
-    for index, reference in enumerate(references):
-        p = doc.add_paragraph()
-        paragraph_format(p, alignment=WD_ALIGN_PARAGRAPH.JUSTIFY, size_after=4, left=0.35, first=-0.35, line=1.0)
-        fragment = italic_fragments[index][0]
-        if fragment in reference:
-            before, after = reference.split(fragment, 1)
-            set_font(p.add_run(before), 9)
-            set_font(p.add_run(fragment), 9, italic=True)
-            set_font(p.add_run(after), 9)
-        else:
-            set_font(p.add_run(reference), 9)
 
     doc.core_properties.title = "A Pilot Comparison of State Representations for DQN Traffic Signal Control"
     doc.core_properties.author = "Nikshay Kumar Nagda; Aashutosh Nagda; Neel Soni; Keiyur Savani"

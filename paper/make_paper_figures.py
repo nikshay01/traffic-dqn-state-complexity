@@ -51,9 +51,9 @@ def training_curves() -> None:
     rows = read_csv(ROOT / "results" / "high_demand_train_episodes.csv")
     fig, axes = plt.subplots(3, 1, figsize=(6.15, 4.0), sharex=True)
     metrics = [
-        ("mean_queue_vehicles", "Time-average queue (vehicles)"),
-        ("mean_wait_s", "Completed-trip waiting time (s)"),
-        ("throughput_vehicles", "Arrivals by 300 s (vehicles)"),
+        ("mean_queue_vehicles", "Queue (vehicles)"),
+        ("mean_wait_s", "Trip wait (s)"),
+        ("throughput_vehicles", "Arrivals (vehicles)"),
     ]
     styles = [("simple", COLORS["simple"], "Compact (3)"),
               ("rich", COLORS["rich"], "Rich (9)")]
@@ -74,7 +74,7 @@ def training_curves() -> None:
                  "epsilon reaches floor around episode 31",
                  ha="left", va="top", fontsize=6.5, color="#555555")
     axes[-1].set_xlabel("Training episode (160 episodes per state mode)")
-    fig.tight_layout(h_pad=0.55)
+    fig.tight_layout(h_pad=0.85)
     save(fig, "training_progress")
 
 
